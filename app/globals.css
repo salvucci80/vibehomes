@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+    --font-syne: 'Syne', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-sans);
+    background: #0D0D14;
+    color: #F0EFE8;
+  }
+}
+
+@layer utilities {
+  .font-syne { font-family: var(--font-syne); }
+  .font-mono { font-family: var(--font-mono); }
+}
+
+/* Mapbox overrides */
+.mapboxgl-popup-content {
+  background: #1A1A2A !important;
+  color: #F0EFE8 !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+}
+.mapboxgl-popup-tip { display: none; }
