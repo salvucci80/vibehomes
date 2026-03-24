@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { VibeScore } from '@/components/ui/vibe-score'
 import { Button } from '@/components/ui/button'
 import { MapPin, Plus } from 'lucide-react'
-import type { NeighbourhoodVibe } from '@/types'
+import type { CopoolGroup } from '../../types'
 
 export function VibeMapClient() {
   const mapContainer = useRef<HTMLDivElement>(null)
