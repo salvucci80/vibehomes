@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 import { MapPin, CheckCircle, Users } from 'lucide-react'
-import type { CopoolGroup } from '../../types'
+import type { Property } from '../../types'
 
 export function PropertyGrid({ properties }: { properties: Property[] }) {
   if (properties.length === 0) {
