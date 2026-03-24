@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, TrendingUp, Home, Calendar, Zap } from 'lucide-react'
-import type { CopoolGroup } from '../../types'
+import type { Booking, CopoolGroup, Property } from '../../types'
 
 interface HostDashboardProps {
   properties: Property[]
