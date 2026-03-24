@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatPct } from '@/lib/utils'
 import { Users, MapPin, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
-import type { CopoolGroup } from '@/types'
+import type { CopoolGroup } from '../../types'
 
 const STATUS_LABELS = {
   forming: { label: 'Forming', color: 'text-vibe-yellow bg-vibe-yellow/10' },

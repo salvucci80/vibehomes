@@ -5,7 +5,6 @@ export type SubTier  = 'free' | 'pro'
 export type KycStatus = 'pending' | 'verified' | 'failed'
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed'
 export type LegalStatus = 'forming' | 'funded' | 'signed' | 'active' | 'dissolved'
-
 export interface User {
   id: string
   email: string
