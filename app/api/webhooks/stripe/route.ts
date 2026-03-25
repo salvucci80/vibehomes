@@ -1,13 +1,37 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe/client'
-import { supabaseAdmin } from '@/lib/supabase/admin'
-import { resend, FROM_EMAIL } from '@/lib/resend/client'
-import type Stripe from 'stripe'
+import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
 
-// ⚠️  This route MUST be excluded from CSRF middleware
-// Next.js config: matcher excludes /api/webhooks/*
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const resendApiKey = process.env.RESEND_API_KEY
+  const fromEmail = process.env.FROM_EMAIL
+
+  if (
+    !stripeSecretKey ||
+    !stripeWebhookSecret ||
+    !supabaseUrl ||
+    !supabaseServiceRoleKey ||
+    !resendApiKey ||
+    !fromEmail
+  ) {
+    console.error('Missing required environment variables for Stripe webhook route')
+    return NextResponse.json({ error: 'Server not configured' }, { status: 500 })
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  })
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+  const resend = new Resend(resendApiKey)
+
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
@@ -18,11 +42,7 @@ export async function POST(request: Request) {
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+    event = stripe.webhooks.constructEvent(body, signature, stripeWebhookSecret)
   } catch (err) {
     console.error('[webhook] Signature verification failed', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
@@ -30,8 +50,6 @@ export async function POST(request: Request) {
 
   try {
     switch (event.type) {
-
-      // ─── Booking confirmed ────────────────────────────────
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent
 
@@ -43,9 +61,8 @@ export async function POST(request: Request) {
           .single()
 
         if (booking) {
-          // Email renter
           await resend.emails.send({
-            from: FROM_EMAIL,
+            from: fromEmail,
             to: booking.renter.email,
             subject: `Booking confirmed — ${booking.property.title}`,
             html: `<p>Hi ${booking.renter.full_name ?? 'there'},</p>
@@ -56,7 +73,6 @@ export async function POST(request: Request) {
         break
       }
 
-      // ─── Booking payment failed ───────────────────────────
       case 'payment_intent.payment_failed': {
         const pi = event.data.object as Stripe.PaymentIntent
         await supabaseAdmin
@@ -66,7 +82,6 @@ export async function POST(request: Request) {
         break
       }
 
-      // ─── Subscription created / renewed ──────────────────
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
@@ -76,17 +91,19 @@ export async function POST(request: Request) {
           .update({ sub_tier: 'pro' })
           .eq('stripe_id', sub.customer as string)
 
-        await supabaseAdmin.from('subscriptions').upsert({
-          stripe_subscription_id: sub.id,
-          stripe_customer_id: sub.customer as string,
-          tier: resolveTier(sub),
-          status: sub.status,
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-        }, { onConflict: 'stripe_subscription_id' })
+        await supabaseAdmin.from('subscriptions').upsert(
+          {
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: sub.customer as string,
+            tier: resolveTier(sub),
+            status: sub.status,
+            current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          },
+          { onConflict: 'stripe_subscription_id' }
+        )
         break
       }
 
-      // ─── Subscription cancelled ───────────────────────────
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
 
@@ -102,11 +119,9 @@ export async function POST(request: Request) {
         break
       }
 
-      // ─── Connect account updated (host onboarding) ────────
       case 'account.updated': {
         const account = event.data.object as Stripe.Account
         if (account.charges_enabled && account.payouts_enabled) {
-          // Host fully onboarded — mark stripe_id on user
           const userId = account.metadata?.vibehome_user_id
           if (userId) {
             await supabaseAdmin
@@ -119,7 +134,6 @@ export async function POST(request: Request) {
       }
 
       default:
-        // Unhandled event type — just log it
         console.log(`[webhook] Unhandled event: ${event.type}`)
     }
 
@@ -132,8 +146,10 @@ export async function POST(request: Request) {
 
 function resolveTier(sub: Stripe.Subscription): string {
   const priceId = sub.items.data[0]?.price.id
-  if (priceId === process.env.STRIPE_PRICE_HOST_PRO_MONTHLY ||
-      priceId === process.env.STRIPE_PRICE_HOST_PRO_ANNUAL) return 'host_pro'
+  if (
+    priceId === process.env.STRIPE_PRICE_HOST_PRO_MONTHLY ||
+    priceId === process.env.STRIPE_PRICE_HOST_PRO_ANNUAL
+  ) return 'host_pro'
   if (priceId === process.env.STRIPE_PRICE_RENTER_PRO_MONTHLY) return 'renter_pro'
   if (priceId === process.env.STRIPE_PRICE_COPOOL_PREMIUM) return 'pool_premium'
   return 'host_pro'
