@@ -66,7 +66,7 @@ export function VibeMapClient() {
     <div className="relative flex-1 h-full">
       <div ref={mapContainer} className="absolute inset-0" />
       <div className="absolute top-4 right-4 z-10">
-        <Button size="sm" onClick={() => alert('Coming soon! Vibe reviews launching next.')}>
+        <Button onClick={() => window.location.href = '/vibes/new'}
           <Plus size={14} /> Review your area
         </Button>
       </div>
