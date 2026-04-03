@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { VibeScore } from '@/components/ui/vibe-score'
 import { Button } from '@/components/ui/button'
 import { MapPin, Plus } from 'lucide-react'
-import type { NeighbourhoodVibe } from '../../types'
+import type { NeighbourhoodVibe } from '@/types'
 
 export function VibeMapClient() {
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -66,7 +66,7 @@ export function VibeMapClient() {
     <div className="relative flex-1 h-full">
       <div ref={mapContainer} className="absolute inset-0" />
       <div className="absolute top-4 right-4 z-10">
-        <Button onClick={() => window.location.href = '/vibes/new'}
+        <Button size="sm" onClick={() => window.location.href = '/vibes/new'}>
           <Plus size={14} /> Review your area
         </Button>
       </div>
