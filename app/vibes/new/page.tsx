@@ -63,7 +63,7 @@ export default function NewVibePage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      router.push('/login?redirect=/vibes/new')
+     router.push('/api/auth/login?redirect=/vibes/new')
       return
     }
 
